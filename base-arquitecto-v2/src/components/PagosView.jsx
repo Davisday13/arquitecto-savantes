@@ -100,9 +100,12 @@ function PagoFormModal({ open, onClose, profile }) {
 
   useEffect(() => {
     if (!form.id_proyecto) { setSubetapas([]); return; }
-    supabase.from('proyecto_subetapas').select('id_subetapa, nombre, monto, pagado, proyecto_etapas!inner(nombre)')
-      .in('id_etapa', supabase.from('proyecto_etapas').select('id_etapa').eq('id_proyecto', form.id_proyecto))
-      .order('orden').then(({ data }) => setSubetapas(data || []));
+    supabase.from('proyecto_etapas').select('id_etapa').eq('id_proyecto', form.id_proyecto).then(({ data: etapas }) => {
+      const ids = (etapas || []).map(e => e.id_etapa);
+      if (!ids.length) { setSubetapas([]); return; }
+      supabase.from('proyecto_subetapas').select('id_subetapa, nombre, monto, pagado, proyecto_etapas!inner(nombre)')
+        .in('id_etapa', ids).order('orden').then(({ data }) => setSubetapas(data || []));
+    });
   }, [form.id_proyecto]);
 
   const guardar = async () => {

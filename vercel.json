@@ -1,4 +1,0 @@
-{
-  "rootDirectory": "base-arquitecto-v2",
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
-}

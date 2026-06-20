@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { LogIn, Eye, EyeOff, Play, Building2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { LogIn, Eye, EyeOff, Building2, UserPlus } from 'lucide-react';
 import Button from './ui/Button';
 
 export default function LoginView() {
@@ -10,7 +11,6 @@ export default function LoginView() {
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [demoLoading, setDemoLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -22,18 +22,6 @@ export default function LoginView() {
       setError(err.message || 'Error al iniciar sesión');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const entrarDemo = async () => {
-    setError('');
-    setDemoLoading(true);
-    try {
-      await login('demo@arquitecto.com', 'demo1234');
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setDemoLoading(false);
     }
   };
 
@@ -65,11 +53,8 @@ export default function LoginView() {
           <Button type="submit" className="w-full" size="lg" loading={loading}><LogIn className="h-4 w-4" /> Iniciar sesión</Button>
         </form>
 
-        <div className="mt-4 pt-4 border-t border-gray-200">
-          <Button variant="secondary" className="w-full" size="lg" onClick={entrarDemo} loading={demoLoading}>
-            <Play className="h-4 w-4" /> Modo Demo — Explorar sin registro
-          </Button>
-          <p className="text-xs text-gray-400 text-center mt-2">Datos ficticios para probar el sistema</p>
+        <div className="mt-4 text-center">
+          <Link to="/registro" className="text-sm text-brand-700 hover:text-brand-800 inline-flex items-center gap-1"><UserPlus className="h-3 w-3" /> Crear una cuenta nueva</Link>
         </div>
       </div>
     </div>

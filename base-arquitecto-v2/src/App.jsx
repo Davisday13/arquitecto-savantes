@@ -2,6 +2,7 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import LoginView from './components/LoginView';
+import RegistroView from './components/RegistroView';
 import Layout from './components/Layout';
 import DashboardView from './components/DashboardView';
 import ProyectosView from './components/ProyectosView';
@@ -40,6 +41,7 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={session ? <Navigate to="/" replace /> : <LoginView />} />
+      <Route path="/registro" element={session ? <Navigate to="/" replace /> : <RegistroView />} />
       <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
         <Route index element={<DashboardView />} />
         <Route path="proyectos" element={<ProyectosView />} />

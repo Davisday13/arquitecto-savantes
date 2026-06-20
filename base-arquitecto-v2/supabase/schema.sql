@@ -86,7 +86,7 @@ create table if not exists notificaciones (
 -- ============================================================
 
 -- 2.1 PROYECTOS
-create table proyectos (
+create table if not exists proyectos (
   id_proyecto     uuid primary key default gen_random_uuid(),
   numero_proyecto text not null unique,
   id_cliente      uuid not null references clientes(id_cliente),
@@ -107,7 +107,7 @@ create table proyectos (
 );
 
 -- 2.2 ETAPAS
-create table proyecto_etapas (
+create table if not exists proyecto_etapas (
   id_etapa     uuid primary key default gen_random_uuid(),
   id_proyecto  uuid not null references proyectos(id_proyecto) on delete cascade,
   nombre       text not null,
@@ -120,7 +120,7 @@ create table proyecto_etapas (
 );
 
 -- 2.3 SUB-ETAPAS
-create table proyecto_subetapas (
+create table if not exists proyecto_subetapas (
   id_subetapa uuid primary key default gen_random_uuid(),
   id_etapa    uuid not null references proyecto_etapas(id_etapa) on delete cascade,
   nombre      text not null,
@@ -133,7 +133,7 @@ create table proyecto_subetapas (
 );
 
 -- 2.4 PAGOS
-create table proyecto_pagos (
+create table if not exists proyecto_pagos (
   id_pago        uuid primary key default gen_random_uuid(),
   id_proyecto    uuid not null references proyectos(id_proyecto) on delete cascade,
   id_subetapa    uuid references proyecto_subetapas(id_subetapa),
@@ -148,26 +148,8 @@ create table proyecto_pagos (
   created_by     uuid references usuarios(id)
 );
 
--- 2.5 GASTOS
-create table proyecto_gastos (
-  id_gasto     uuid primary key default gen_random_uuid(),
-  tipo         text not null check (tipo in ('GENERAL','ETAPA')),
-  id_proyecto  uuid references proyectos(id_proyecto),
-  id_etapa     uuid references proyecto_etapas(id_etapa),
-  id_subetapa  uuid references proyecto_subetapas(id_subetapa),
-  descripcion  text not null,
-  categoria    text default 'OTROS',
-  monto        numeric(14,2) not null check (monto >= 0),
-  fecha        date not null default current_date,
-  comprobante  text,
-  id_item      uuid references inventario_items(id_item),
-  cantidad     numeric(12,2),
-  created_at   timestamptz default now(),
-  created_by   uuid references usuarios(id)
-);
-
--- 2.6 INVENTARIO — ITEMS
-create table inventario_items (
+-- 2.5 INVENTARIO — ITEMS
+create table if not exists inventario_items (
   id_item     uuid primary key default gen_random_uuid(),
   codigo      text unique,
   nombre      text not null,
@@ -182,8 +164,8 @@ create table inventario_items (
   created_by  uuid references usuarios(id)
 );
 
--- 2.7 INVENTARIO — MOVIMIENTOS
-create table inventario_movimientos (
+-- 2.6 INVENTARIO — MOVIMIENTOS
+create table if not exists inventario_movimientos (
   id_mov      uuid primary key default gen_random_uuid(),
   id_item     uuid not null references inventario_items(id_item),
   tipo        text not null check (tipo in ('ENTRADA','SALIDA','AJUSTE')),
@@ -195,6 +177,24 @@ create table inventario_movimientos (
   fecha       date not null default current_date,
   created_at  timestamptz default now(),
   created_by  uuid references usuarios(id)
+);
+
+-- 2.7 GASTOS
+create table if not exists proyecto_gastos (
+  id_gasto     uuid primary key default gen_random_uuid(),
+  tipo         text not null check (tipo in ('GENERAL','ETAPA')),
+  id_proyecto  uuid references proyectos(id_proyecto),
+  id_etapa     uuid references proyecto_etapas(id_etapa),
+  id_subetapa  uuid references proyecto_subetapas(id_subetapa),
+  descripcion  text not null,
+  categoria    text default 'OTROS',
+  monto        numeric(14,2) not null check (monto >= 0),
+  fecha        date not null default current_date,
+  comprobante  text,
+  id_item      uuid references inventario_items(id_item),
+  cantidad     numeric(12,2),
+  created_at   timestamptz default now(),
+  created_by   uuid references usuarios(id)
 );
 
 -- ============================================================
@@ -213,8 +213,8 @@ create index idx_notificaciones_dest on notificaciones(destinatario_id, estado);
 -- ============================================================
 
 -- 4.1 RECÁLCULO: cuando cambia avance_pct de una sub-etapa
---   → etapa.avance_pct = Σ(sub.peso_pct × sub.avance_pct) / 100
---   → proyecto.avance_pct = Σ(etapa.peso_pct × etapa.avance_pct) / 100
+--   → etapa.avance_pct = Σ(sub.peso_pct × sub.avance_pct) / Σ(sub.peso_pct)
+--   → proyecto.avance_pct = Σ(etapa.peso_pct × etapa.avance_pct) / Σ(etapa.peso_pct)
 create or replace function recalc_avance_from_subetapa()
 returns trigger as $$
 declare
@@ -222,21 +222,23 @@ declare
   v_id_proyecto uuid;
 begin
   v_id_etapa := NEW.id_etapa;
-  -- Recalcular etapa
+  -- Recalcular etapa (normalizado por suma de pesos)
   update proyecto_etapas
   set avance_pct = coalesce((
-    select sum(ps.peso_pct * ps.avance_pct) / 100.0
+    select sum(ps.peso_pct * ps.avance_pct) / greatest(sum(ps.peso_pct), 1)
     from proyecto_subetapas ps
     where ps.id_etapa = proyecto_etapas.id_etapa and ps.avance_pct is not null
   ), 0)
   where id_etapa = v_id_etapa
   returning id_proyecto into v_id_proyecto;
-  -- Recalcular proyecto
+  -- Recalcular proyecto (solo etapas que tienen sub-etapas definidas)
   update proyectos
   set avance_pct = coalesce((
-    select sum(pe.peso_pct * pe.avance_pct) / 100.0
+    select sum(pe.peso_pct * pe.avance_pct) / greatest(sum(pe.peso_pct), 1)
     from proyecto_etapas pe
-    where pe.id_proyecto = proyectos.id_proyecto and pe.avance_pct is not null
+    where pe.id_proyecto = proyectos.id_proyecto
+      and pe.avance_pct is not null
+      and exists (select 1 from proyecto_subetapas ps where ps.id_etapa = pe.id_etapa)
   ), 0)
   where id_proyecto = v_id_proyecto;
   return NEW;

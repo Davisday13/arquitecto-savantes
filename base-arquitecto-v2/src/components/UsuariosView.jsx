@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase, supabaseUrl } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 import { UserCog, Plus, Search, Edit, ShieldCheck } from 'lucide-react';
 import { Card, Badge } from './ui/Card';
 import Button from './ui/Button';
@@ -70,28 +70,13 @@ function UsuarioFormModal({ open, onClose, usuario }) {
         const upd = { nombre: form.nombre, rol: form.rol, activo: form.activo };
         await supabase.from('usuarios').update(upd).eq('id', usuario.id);
       } else {
-        if (supabaseUrl) {
-          const { data: session } = await supabase.auth.getSession();
-          const res = await fetch(`${supabaseUrl}/functions/v1/crear-usuario`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${session?.session?.access_token || ''}`,
-            },
-            body: JSON.stringify({ email: form.email, password: form.password, nombre: form.nombre, rol: form.rol }),
-          });
-          const result = await res.json();
-          if (!res.ok) throw new Error(result.error || 'Error al crear usuario');
-        } else {
-          // Demo mode: mock creation
-          const { data: authData, error: authErr } = await supabase.auth.admin.createUser({
-            email: form.email, password: form.password, email_confirm: true,
-          });
-          if (authErr) throw authErr;
-          await supabase.from('usuarios').insert({
-            id: authData.user.id, email: form.email, nombre: form.nombre, rol: form.rol, activo: form.activo,
-          });
-        }
+        const res = await fetch('/api/crear-usuario', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: form.email, password: form.password, nombre: form.nombre, rol: form.rol }),
+        });
+        const result = await res.json();
+        if (!res.ok) throw new Error(result.error || 'Error al crear usuario');
       }
       onClose();
     } catch (err) { alert(err.message); } finally { setSaving(false); }

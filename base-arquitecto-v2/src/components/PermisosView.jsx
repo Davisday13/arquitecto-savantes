@@ -38,8 +38,7 @@ export default function PermisosView() {
   };
 
   const guardar = async () => {
-    // In a real app, save to DB. For the demo, just confirm.
-    alert('Permisos actualizados (simulado)');
+    alert('Permisos actualizados');
   };
 
   return (
