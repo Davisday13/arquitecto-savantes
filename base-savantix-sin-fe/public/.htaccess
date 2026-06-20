@@ -1,0 +1,12 @@
+# Savantix - .htaccess para Hostinger SPA
+RewriteEngine On
+
+# Si NO es un archivo o carpeta existente, redirige a index.html
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.html [QSA,L]
+
+# Service Worker e index.html: NO cachear (siempre versión nueva)
+<FilesMatch "(sw\.js|index\.html|manifest\.json)$">
+  Header set Cache-Control "no-cache, no-store, must-revalidate"
+</FilesMatch>
