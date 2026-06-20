@@ -3,7 +3,7 @@ import { MOCK } from './mockData';
 
 const _supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-const isDemo = import.meta.env.DEV && (!_supabaseUrl || _supabaseUrl.includes('placeholder') || _supabaseUrl.includes('tu-proyecto'));
+const isDemo = !_supabaseUrl || _supabaseUrl.includes('placeholder') || _supabaseUrl.includes('tu-proyecto');
 
 export const supabaseUrl = _supabaseUrl || '';
 
