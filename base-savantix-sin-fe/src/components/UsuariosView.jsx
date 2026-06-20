@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { Plus, Search, Edit2, UserCheck, UserX } from 'lucide-react';
+import { Search, Edit2, UserCheck, UserX } from 'lucide-react';
 import { Card, CardContent, Badge } from './ui/Card';
 import Button from './ui/Button';
 import { Input, Select } from './ui/Input';
@@ -53,9 +53,7 @@ export default function UsuariosView({ profile }) {
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h1 className="text-2xl font-bold text-gray-900">Usuarios</h1>
-        <Button onClick={() => { setEditing(null); setShowForm(true); }}>
-          <Plus className="h-4 w-4" /> Nuevo usuario
-        </Button>
+
       </div>
 
       <Card>
@@ -156,93 +154,37 @@ export default function UsuariosView({ profile }) {
 }
 
 function UsuarioForm({ open, onClose, usuario, clientes, soyRoot, onSaved }) {
-  const esEdicion = !!usuario;
   const [form, setForm] = useState({
-    email: '', password: '', nombre_completo: '', telefono: '',
-    rol: 'TECNICO', id_cliente_asociado: '',
+    nombre_completo: '', telefono: '', rol: 'TECNICO', id_cliente_asociado: '',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [info, setInfo] = useState('');
 
   useEffect(() => {
-    if (open) {
-      setError(''); setInfo('');
-      if (usuario) {
-        setForm({
-          email: usuario.email_login || '',
-          password: '',
-          nombre_completo: usuario.nombre_completo || '',
-          telefono: usuario.telefono || '',
-          rol: usuario.rol || 'TECNICO',
-          id_cliente_asociado: usuario.id_cliente_asociado || '',
-        });
-      } else {
-        setForm({
-          email: '', password: '', nombre_completo: '', telefono: '',
-          rol: 'TECNICO', id_cliente_asociado: '',
-        });
-      }
+    if (open && usuario) {
+      setError('');
+      setForm({
+        nombre_completo: usuario.nombre_completo || '',
+        telefono: usuario.telefono || '',
+        rol: usuario.rol || 'TECNICO',
+        id_cliente_asociado: usuario.id_cliente_asociado || '',
+      });
     }
   }, [open, usuario]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(''); setInfo('');
-
+    setError('');
     if (!form.nombre_completo.trim()) return setError('Nombre es obligatorio');
-    if (!form.email.trim()) return setError('Correo es obligatorio');
-    if (form.rol === 'CLIENTE' && !form.id_cliente_asociado) {
-      return setError('Debes asociar este usuario CLIENTE a un cliente del sistema');
-    }
-    if (!soyRoot && form.rol === 'ROOT') {
-      return setError('Solo ROOT puede crear otro usuario ROOT');
-    }
-
     setLoading(true);
     try {
-      if (esEdicion) {
-        // Editar perfil existente (no toca auth)
-        const updates = {
-          nombre_completo: form.nombre_completo,
-          telefono: form.telefono || null,
-          rol: form.rol,
-          id_cliente_asociado: form.rol === 'CLIENTE' ? form.id_cliente_asociado : null,
-          permisos: PERMISOS_POR_ROL[form.rol] || PERMISOS_POR_ROL.TECNICO,
-        };
-        const { error } = await supabase.from('usuarios').update(updates).eq('id', usuario.id);
-        if (error) throw error;
-        onSaved();
-      } else {
-        // Crear nuevo: signUp en Auth + INSERT en usuarios
-        if (!form.password || form.password.length < 6) {
-          setError('Contraseña mínimo 6 caracteres');
-          setLoading(false);
-          return;
-        }
-        const { data, error: signErr } = await supabase.auth.signUp({
-          email: form.email,
-          password: form.password,
-        });
-        if (signErr) throw signErr;
-        if (!data.user) throw new Error('No se pudo crear el usuario en Auth');
-
-        const { error: profErr } = await supabase.from('usuarios').insert({
-          id: data.user.id,
-          email: form.email,
-          email_login: form.email,
-          nombre_completo: form.nombre_completo,
-          telefono: form.telefono || null,
-          rol: form.rol,
-          id_cliente_asociado: form.rol === 'CLIENTE' ? form.id_cliente_asociado : null,
-          activo: true,
-          permisos: PERMISOS_POR_ROL[form.rol] || PERMISOS_POR_ROL.TECNICO,
-        });
-        if (profErr) throw profErr;
-
-        setInfo('Usuario creado. Si tu Supabase requiere confirmación de email, el usuario debe confirmar antes de ingresar.');
-        setTimeout(onSaved, 1500);
-      }
+      await supabase.from('usuarios').update({
+        nombre_completo: form.nombre_completo,
+        telefono: form.telefono || null,
+        rol: form.rol,
+        permisos: PERMISOS_POR_ROL[form.rol] || PERMISOS_POR_ROL.TECNICO,
+      }).eq('id', usuario.id);
+      onSaved();
     } catch (err) {
       setError(err.message);
     } finally {
@@ -250,80 +192,29 @@ function UsuarioForm({ open, onClose, usuario, clientes, soyRoot, onSaved }) {
     }
   };
 
-  // Lista de roles disponibles según quien crea
   const rolesDisponibles = soyRoot
     ? ['ROOT', 'ADMIN', 'RECEPCIONISTA', 'TECNICO', 'CLIENTE']
     : ['ADMIN', 'RECEPCIONISTA', 'TECNICO', 'CLIENTE'];
 
   return (
-    <Modal open={open} onClose={onClose} title={esEdicion ? 'Editar usuario' : 'Nuevo usuario'} size="lg">
+    <Modal open={open} onClose={onClose} title="Editar usuario" size="lg">
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && <div className="bg-red-50 text-red-700 text-sm p-3 rounded">{error}</div>}
-        {info && <div className="bg-emerald-50 text-emerald-700 text-sm p-3 rounded">{info}</div>}
 
-        <Input
-          label="Nombre completo *"
-          value={form.nombre_completo}
-          onChange={e => setForm({ ...form, nombre_completo: e.target.value })}
-          required
-        />
+        <Input label="Nombre completo *" value={form.nombre_completo} onChange={e => setForm({ ...form, nombre_completo: e.target.value })} required />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Input
-            label="Correo *"
-            type="email"
-            value={form.email}
-            onChange={e => setForm({ ...form, email: e.target.value })}
-            disabled={esEdicion}
-            required
-          />
-          <Input
-            label="Teléfono"
-            value={form.telefono}
-            onChange={e => setForm({ ...form, telefono: e.target.value })}
-          />
+          {usuario && <Input label="Correo" type="email" value={usuario.email_login || ''} disabled />}
+          <Input label="Teléfono" value={form.telefono} onChange={e => setForm({ ...form, telefono: e.target.value })} />
         </div>
 
-        {!esEdicion && (
-          <Input
-            label="Contraseña inicial *"
-            type="password"
-            value={form.password}
-            onChange={e => setForm({ ...form, password: e.target.value })}
-            required
-            placeholder="Mínimo 6 caracteres"
-          />
-        )}
-
-        <Select
-          label="Rol *"
-          value={form.rol}
-          onChange={e => setForm({ ...form, rol: e.target.value })}
-        >
+        <Select label="Rol *" value={form.rol} onChange={e => setForm({ ...form, rol: e.target.value })}>
           {rolesDisponibles.map(r => <option key={r} value={r}>{ROLES_LABEL[r]}</option>)}
         </Select>
 
-        {form.rol === 'CLIENTE' && (
-          <Select
-            label="Cliente asociado *"
-            value={form.id_cliente_asociado}
-            onChange={e => setForm({ ...form, id_cliente_asociado: e.target.value })}
-            required
-          >
-            <option value="">— Selecciona el cliente al que pertenece —</option>
-            {clientes.map(c => <option key={c.id_cliente} value={c.id_cliente}>{c.nombre}</option>)}
-          </Select>
-        )}
-
-        <div className="text-xs text-gray-500 bg-gray-50 p-3 rounded">
-          Los permisos se asignarán automáticamente según el rol. Puedes ajustarlos después en la pestaña "Permisos".
-        </div>
-
         <div className="flex justify-end gap-2 pt-2 border-t">
           <Button variant="secondary" onClick={onClose} type="button">Cancelar</Button>
-          <Button type="submit" loading={loading}>
-            {esEdicion ? 'Guardar cambios' : 'Crear usuario'}
-          </Button>
+          <Button type="submit" loading={loading}>Guardar cambios</Button>
         </div>
       </form>
     </Modal>

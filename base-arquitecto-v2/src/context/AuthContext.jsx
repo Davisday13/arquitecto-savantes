@@ -4,43 +4,59 @@ import { getPermisos } from '../lib/constants';
 
 const AuthContext = createContext(null);
 
+function crearPerfilDeSesion(user) {
+  if (!user) return null;
+  return {
+    id: user.id,
+    email: user.email,
+    nombre: user.email?.split('@')[0],
+    email_login: user.email,
+    rol: 'ARQUITECTO',
+    activo: true,
+  };
+}
+
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
   const [permisos, setPermisos] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const cargarPerfil = useCallback(async (userId) => {
+  const cargarPerfilDb = useCallback(async (userId) => {
     const { data } = await supabase.from('usuarios').select('*').eq('id', userId).single();
     if (data) {
       setProfile(data);
       setPermisos(getPermisos(data.rol, data.permisos_extra));
     }
-    return data;
   }, []);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session: s } }) => {
       setSession(s);
-      if (s?.user) cargarPerfil(s.user.id).finally(() => setLoading(false));
-      else setLoading(false);
+      setProfile(crearPerfilDeSesion(s?.user));
+      setPermisos(getPermisos(s?.user?.user_metadata?.rol || 'ARQUITECTO', null));
+      setLoading(false);
+      if (s?.user) cargarPerfilDb(s.user.id);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
       setSession(s);
-      if (s?.user) cargarPerfil(s.user.id);
-      else { setProfile(null); setPermisos(null); }
+      setProfile(crearPerfilDeSesion(s?.user));
+      setPermisos(getPermisos(s?.user?.user_metadata?.rol || 'ARQUITECTO', null));
+      if (s?.user) cargarPerfilDb(s.user.id);
     });
 
     return () => subscription?.unsubscribe();
-  }, [cargarPerfil]);
+  }, [cargarPerfilDb]);
 
   const login = async (email, password) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
     if (data?.session) {
       setSession(data.session);
-      await cargarPerfil(data.session.user.id);
+      setProfile(crearPerfilDeSesion(data.session.user));
+      setPermisos(getPermisos('ARQUITECTO', null));
+      cargarPerfilDb(data.session.user.id);
     }
   };
 
@@ -56,7 +72,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ session, profile, permisos, loading, login, logout, cargarPerfil, cambiarPassword }}>
+    <AuthContext.Provider value={{ session, profile, permisos, loading, login, logout, cargarPerfilDb, cambiarPassword }}>
       {children}
     </AuthContext.Provider>
   );

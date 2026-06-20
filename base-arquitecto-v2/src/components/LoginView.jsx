@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { Link } from 'react-router-dom';
-import { LogIn, Eye, EyeOff, Building2, UserPlus } from 'lucide-react';
+import { supabase } from '../lib/supabase';
+import { LogIn, Eye, EyeOff, Building2 } from 'lucide-react';
 import Button from './ui/Button';
 
 export default function LoginView() {
-  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
@@ -17,10 +15,10 @@ export default function LoginView() {
     setError('');
     setLoading(true);
     try {
-      await login(email, password);
+      await supabase.auth.signInWithPassword({ email, password });
+      window.location.href = '/';
     } catch (err) {
       setError(err.message || 'Error al iniciar sesión');
-    } finally {
       setLoading(false);
     }
   };
@@ -52,10 +50,6 @@ export default function LoginView() {
           </div>
           <Button type="submit" className="w-full" size="lg" loading={loading}><LogIn className="h-4 w-4" /> Iniciar sesión</Button>
         </form>
-
-        <div className="mt-4 text-center">
-          <Link to="/registro" className="text-sm text-brand-700 hover:text-brand-800 inline-flex items-center gap-1"><UserPlus className="h-3 w-3" /> Crear una cuenta nueva</Link>
-        </div>
       </div>
     </div>
   );

@@ -2,7 +2,6 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import LoginView from './components/LoginView';
-import RegistroView from './components/RegistroView';
 import Layout from './components/Layout';
 import DashboardView from './components/DashboardView';
 import ProyectosView from './components/ProyectosView';
@@ -23,7 +22,7 @@ function ProtectedRoute({ children, rolMinimo = 'CLIENTE' }) {
 
   if (loading) return <div className="flex items-center justify-center h-64"><div className="animate-spin h-8 w-8 border-4 border-brand-700 border-t-transparent rounded-full" /></div>;
 
-  if (!session || !profile) return <Navigate to="/login" replace />;
+  if (!session) return <Navigate to="/login" replace />;
 
   const rolesJerarquia = { ROOT: 5, ADMIN: 4, ARQUITECTO: 3, ASISTENTE: 2, CLIENTE: 1 };
   if ((rolesJerarquia[profile.rol] || 0) < (rolesJerarquia[rolMinimo] || 0)) {
@@ -41,7 +40,6 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={session ? <Navigate to="/" replace /> : <LoginView />} />
-      <Route path="/registro" element={session ? <Navigate to="/" replace /> : <RegistroView />} />
       <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
         <Route index element={<DashboardView />} />
         <Route path="proyectos" element={<ProyectosView />} />
