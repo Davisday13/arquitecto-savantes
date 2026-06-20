@@ -263,6 +263,7 @@ declare
   v_id_proyecto  uuid;
   v_monto_sub    numeric(14,2);
   v_pagado_sub   numeric(14,2);
+  v_pagado_total numeric(14,2);
 begin
   v_id_subetapa := coalesce(NEW.id_subetapa, OLD.id_subetapa);
 
@@ -293,18 +294,18 @@ begin
     from proyectos where id_proyecto = coalesce(NEW.id_proyecto, OLD.id_proyecto);
   end if;
 
-  -- Recalcular proyecto
-  update proyectos
-  set pagado_total = coalesce((
-    select sum(coalesce(pe.pagado_total, 0)) from proyecto_etapas pe where pe.id_proyecto = proyectos.id_proyecto
-  ), 0) + coalesce((
-    select sum(monto) from proyecto_pagos
-    where id_proyecto = proyectos.id_proyecto and id_subetapa is null
-      and (anulado is null or anulado = false)
-  ), 0),
-  pago_pct = case when monto_total > 0
-    then (pagado_total / monto_total) * 100
-    else 0 end
+  -- Calcular nuevo pagado_total en variable para usarlo en pago_pct
+  select
+    coalesce((select sum(pe.pagado_total) from proyecto_etapas pe where pe.id_proyecto = p.id_proyecto), 0)
+    + coalesce((select sum(monto) from proyecto_pagos
+      where id_proyecto = p.id_proyecto and id_subetapa is null
+        and (anulado is null or anulado = false)), 0)
+  into v_pagado_total
+  from proyectos p where p.id_proyecto = v_id_proyecto;
+
+  -- Actualizar proyecto en dos pasos para que pago_pct use el nuevo pagado_total
+  update proyectos set pagado_total = v_pagado_total where id_proyecto = v_id_proyecto;
+  update proyectos set pago_pct = case when monto_total > 0 then (pagado_total / monto_total) * 100 else 0 end
   where id_proyecto = v_id_proyecto;
 
   return NEW;
