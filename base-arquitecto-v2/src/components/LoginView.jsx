@@ -15,7 +15,9 @@ export default function LoginView() {
     setError('');
     setLoading(true);
     try {
-      await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      if (!data?.session) throw new Error('No se pudo iniciar sesión');
       window.location.href = '/';
     } catch (err) {
       setError(err.message || 'Error al iniciar sesión');

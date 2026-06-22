@@ -34,7 +34,7 @@ export function AuthProvider({ children }) {
     supabase.auth.getSession().then(({ data: { session: s } }) => {
       setSession(s);
       setProfile(crearPerfilDeSesion(s?.user));
-      setPermisos(getPermisos(s?.user?.user_metadata?.rol || 'ARQUITECTO', null));
+      setPermisos(getPermisos(s?.user?.user_metadata?.rol || 'CLIENTE', null));
       setLoading(false);
       if (s?.user) cargarPerfilDb(s.user.id);
     });
@@ -42,7 +42,7 @@ export function AuthProvider({ children }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
       setSession(s);
       setProfile(crearPerfilDeSesion(s?.user));
-      setPermisos(getPermisos(s?.user?.user_metadata?.rol || 'ARQUITECTO', null));
+      setPermisos(getPermisos(s?.user?.user_metadata?.rol || 'CLIENTE', null));
       if (s?.user) cargarPerfilDb(s.user.id);
     });
 
