@@ -122,7 +122,7 @@ export default function ProyectosView() {
                         <button onClick={() => setShowAvance(p)} className="px-2 py-1 text-xs bg-brand-700 text-white rounded hover:bg-brand-800 font-medium">Avance</button>
                         <button onClick={() => setShowDetalle(p)} className="p-1.5 hover:bg-blue-50 rounded text-blue-700" title="Ver detalle"><Eye className="h-4 w-4" /></button>
                         {p.estado === 'COTIZACION' && (
-                          <button onClick={() => { setShowForm(false); }} className="p-1.5 hover:bg-amber-50 rounded text-amber-600" title="Editar"><Edit className="h-4 w-4" /></button>
+                          <button onClick={() => setShowDetalle(p)} className="p-1.5 hover:bg-amber-50 rounded text-amber-600" title="Ver/editar cotización"><Eye className="h-4 w-4" /></button>
                         )}
                         <button onClick={() => handleEliminar(p.id_proyecto)} className="p-1.5 hover:bg-red-50 rounded text-red-500" title="Eliminar"><Trash2 className="h-4 w-4" /></button>
                       </div>

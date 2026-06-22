@@ -13,7 +13,7 @@ export default function ClientesView() {
   const [showForm, setShowForm] = useState(false);
   const [editCliente, setEditCliente] = useState(null);
 
-  const cargar = () => supabase.from('clientes').select('*').order('nombre').then(({ data }) => setClientes(data || []));
+  const cargar = () => supabase.from('clientes').select('*').eq('activo', true).order('nombre').then(({ data }) => setClientes(data || []));
   useEffect(() => { cargar(); }, []);
 
   const filtrados = clientes.filter(c => {

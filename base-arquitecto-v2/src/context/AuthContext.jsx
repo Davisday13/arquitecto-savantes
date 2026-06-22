@@ -11,7 +11,7 @@ function crearPerfilDeSesion(user) {
     email: user.email,
     nombre: user.email?.split('@')[0],
     email_login: user.email,
-    rol: 'ARQUITECTO',
+    rol: user.user_metadata?.rol || 'CLIENTE',
     activo: true,
   };
 }
@@ -55,13 +55,14 @@ export function AuthProvider({ children }) {
     if (data?.session) {
       setSession(data.session);
       setProfile(crearPerfilDeSesion(data.session.user));
-      setPermisos(getPermisos('ARQUITECTO', null));
+      setPermisos(getPermisos(data.session.user?.user_metadata?.rol || 'CLIENTE', null));
       cargarPerfilDb(data.session.user.id);
     }
   };
 
   const logout = async () => {
     await supabase.auth.signOut();
+    setSession(null);
     setProfile(null);
     setPermisos(null);
   };

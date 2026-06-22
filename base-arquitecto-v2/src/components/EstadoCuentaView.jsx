@@ -16,21 +16,27 @@ export default function EstadoCuentaView() {
 
   useEffect(() => {
     if (!idProyecto) { setData(null); return; }
-    Promise.all([
-      supabase.from('v_proyectos_completa').select('*').eq('id_proyecto', idProyecto).single(),
-      supabase.from('proyecto_etapas').select('*').eq('id_proyecto', idProyecto).order('orden'),
-      supabase.from('proyecto_subetapas').select('*, proyecto_etapas!inner(nombre, tipo)').in('id_etapa', supabase.from('proyecto_etapas').select('id_etapa').eq('id_proyecto', idProyecto)).order('orden'),
-      supabase.from('proyecto_pagos').select('*').eq('id_proyecto', idProyecto).eq('anulado', false).order('created_at', { ascending: false }),
-      supabase.from('proyecto_gastos').select('*').eq('id_proyecto', idProyecto).order('created_at', { ascending: false }),
-    ]).then(([proyRes, etapasRes, subsRes, pagosRes, gastosRes]) => {
+    (async () => {
+      const [proyRes, etapasRes, pagosRes, gastosRes] = await Promise.all([
+        supabase.from('v_proyectos_completa').select('*').eq('id_proyecto', idProyecto).single(),
+        supabase.from('proyecto_etapas').select('*').eq('id_proyecto', idProyecto).order('orden'),
+        supabase.from('proyecto_pagos').select('*').eq('id_proyecto', idProyecto).eq('anulado', false).order('created_at', { ascending: false }),
+        supabase.from('proyecto_gastos').select('*').eq('id_proyecto', idProyecto).order('created_at', { ascending: false }),
+      ]);
+      const idsEtapas = (etapasRes.data || []).map(e => e.id_etapa);
+      let sub_etapas = [];
+      if (idsEtapas.length > 0) {
+        const subsRes = await supabase.from('proyecto_subetapas').select('*, proyecto_etapas!inner(nombre, tipo)').in('id_etapa', idsEtapas).order('orden');
+        sub_etapas = subsRes.data || [];
+      }
       setData({
         proyecto: proyRes.data,
         etapas: etapasRes.data || [],
-        sub_etapas: subsRes.data || [],
+        sub_etapas,
         pagos: pagosRes.data || [],
         gastos: gastosRes.data || [],
       });
-    });
+    })();
   }, [idProyecto]);
 
   const totalGastos = data?.gastos?.reduce((s, g) => s + Number(g.monto), 0) || 0;

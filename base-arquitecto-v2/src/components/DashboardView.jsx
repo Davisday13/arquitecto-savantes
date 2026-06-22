@@ -16,7 +16,7 @@ export default function DashboardView() {
   useEffect(() => {
     supabase.from('v_estadisticas_proyectos').select('*').single().then(({ data }) => setStats(data || {}));
     supabase.from('v_proyectos_completa').select('*').order('created_at', { ascending: false }).limit(5).then(({ data }) => setProyectos(data || []));
-    supabase.from('inventario_items').select('*').lte('stock', 'stock_min').eq('activo', true).then(({ data }) => setBajoStock(data || []));
+    supabase.from('inventario_items').select('*').or('stock.lte.stock_min').eq('activo', true).then(({ data }) => setBajoStock(data || []));
   }, []);
 
   const accesos = [

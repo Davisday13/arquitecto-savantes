@@ -26,8 +26,7 @@ export default function PermisosView() {
   const [permisos, setPermisos] = useState({ ...PERMISOS_POR_ROL });
 
   useEffect(() => {
-    const { data } = PERMISOS_POR_ROL;
-    if (data) setPermisos(data);
+    setPermisos({ ...PERMISOS_POR_ROL });
   }, []);
 
   const cambiarNivel = (rol, modulo, nivel) => {
@@ -38,7 +37,7 @@ export default function PermisosView() {
   };
 
   const guardar = async () => {
-    alert('Permisos actualizados');
+    alert('Permisos actualizados (solo en memoria). Los cambios se perderán al recargar. Para persistencia permanente, se requiere tabla en BD.');
   };
 
   return (
