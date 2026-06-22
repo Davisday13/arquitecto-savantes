@@ -27,6 +27,7 @@ export function AuthProvider({ children }) {
     if (data) {
       setProfile(data);
       setPermisos(getPermisos(data.rol, data.permisos_extra));
+      supabase.from('usuarios').update({ ultimo_acceso: new Date().toISOString() }).eq('id', userId).then();
     }
   }, []);
 
