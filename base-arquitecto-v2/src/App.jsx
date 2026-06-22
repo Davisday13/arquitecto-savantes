@@ -49,8 +49,8 @@ function AppRoutes() {
         <Route path="estado-cuenta" element={<EstadoCuentaView />} />
         <Route path="inventario" element={<InventarioView />} />
         <Route path="reportes" element={<ReportesView />} />
-        <Route path="usuarios" element={<UsuariosView />} />
-        <Route path="permisos" element={<PermisosView />} />
+        <Route path="usuarios" element={<ProtectedRoute rolMinimo="ADMIN"><UsuariosView /></ProtectedRoute>} />
+        <Route path="permisos" element={<ProtectedRoute rolMinimo="ADMIN"><PermisosView /></ProtectedRoute>} />
         <Route path="auditoria" element={<AuditoriaView />} />
         <Route path="notificaciones" element={<NotificacionesView />} />
         <Route path="configuracion" element={<ConfiguracionView />} />
