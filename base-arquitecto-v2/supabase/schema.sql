@@ -67,6 +67,16 @@ create table if not exists auditoria (
   created_at    timestamptz default now()
 );
 
+alter table auditoria enable row level security;
+
+drop policy if exists "auditoria_select_admin" on auditoria;
+create policy "auditoria_select_admin" on auditoria
+  for select using (
+    auth.uid() in (
+      select id from usuarios where rol in ('ROOT','ADMIN')
+    )
+  );
+
 create table if not exists notificaciones (
   id_notificacion uuid primary key default gen_random_uuid(),
   destinatario_id uuid not null references usuarios(id),
