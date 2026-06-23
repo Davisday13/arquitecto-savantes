@@ -209,7 +209,79 @@ create index idx_movimientos_item on inventario_movimientos(id_item);
 create index idx_notificaciones_dest on notificaciones(destinatario_id, estado);
 
 -- ============================================================
--- 4. TRIGGERS — LÓGICA DE CÁLCULO
+-- 4. TRIGGERS — AUDITORÍA
+-- ============================================================
+
+create or replace function auditar_cambio()
+returns trigger
+security definer
+language plpgsql
+as $$
+declare
+  v_user_id    uuid;
+  v_user_name  text;
+  v_id_val     text;
+  v_tabla      text;
+begin
+  v_tabla := TG_TABLE_NAME;
+  v_user_id := auth.uid();
+
+  if v_user_id is not null then
+    select nombre into v_user_name from usuarios where id = v_user_id;
+  end if;
+
+  begin
+    if TG_OP = 'DELETE' then
+      execute format('select ($1).%I::text', 'id_' || v_tabla) using OLD into v_id_val;
+    else
+      execute format('select ($1).%I::text', 'id_' || v_tabla) using NEW into v_id_val;
+    end if;
+  exception when others then
+    begin
+      if TG_OP = 'DELETE' then
+        v_id_val := OLD.id::text;
+      else
+        v_id_val := NEW.id::text;
+      end if;
+    exception when others then
+      v_id_val := null;
+    end;
+  end;
+
+  insert into auditoria (tabla, operacion, id_registro, valores_viejos, valores_nuevos, usuario_id, usuario_nombre)
+  values (
+    v_tabla,
+    TG_OP,
+    v_id_val,
+    case when TG_OP in ('UPDATE','DELETE') then row_to_json(OLD)::jsonb else null end,
+    case when TG_OP in ('INSERT','UPDATE') then row_to_json(NEW)::jsonb else null end,
+    v_user_id,
+    v_user_name
+  );
+
+  return coalesce(NEW, OLD);
+end;
+$$;
+
+do $$
+declare
+  t text;
+  tbls text[] := array[
+    'usuarios','clientes','configuracion_empresa','proyectos','proyecto_etapas',
+    'proyecto_subetapas','proyecto_pagos','inventario_items','inventario_movimientos',
+    'proyecto_gastos','notificaciones'
+  ];
+begin
+  foreach t in array tbls
+  loop
+    execute format('drop trigger if exists trg_auditar on %I', t);
+    execute format('create trigger trg_auditar after insert or update or delete on %I for each row execute function auditar_cambio()', t);
+  end loop;
+end;
+$$;
+
+-- ============================================================
+-- 5. TRIGGERS — LÓGICA DE CÁLCULO
 -- ============================================================
 
 -- 4.1 RECÁLCULO: cuando cambia avance_pct de una sub-etapa
