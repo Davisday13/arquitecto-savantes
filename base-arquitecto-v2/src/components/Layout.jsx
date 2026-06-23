@@ -41,6 +41,7 @@ export default function Layout() {
   const { profile, permisos, logout } = useAuth();
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem('arq:sidebar') === 'true');
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [empresa, setEmpresa] = useState(null);
   const [expandedGroups, setExpandedGroups] = useState(
     JSON.parse(localStorage.getItem('arq:expanded') || '{}')
@@ -78,13 +79,22 @@ export default function Layout() {
     navigate('/login');
   };
 
+  const sidebarWidth = collapsed ? 'w-16' : 'w-56';
+
   if (!profile) return null;
 
   const hasItems = (items) => items.some(item => tienePermiso(permisos, item.perm, 1));
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <aside className={`fixed left-0 top-0 h-full bg-white border-r border-gray-200 z-40 transition-all duration-200 flex flex-col ${collapsed ? 'w-16' : 'w-56'}`}>
+      {mobileOpen && (
+        <div className="fixed inset-0 bg-black/40 z-30 lg:hidden" onClick={() => setMobileOpen(false)} />
+      )}
+
+      <aside className={`fixed left-0 top-0 h-full bg-white border-r border-gray-200 z-40 transition-all duration-200 flex flex-col
+        ${sidebarWidth}
+        ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}
+        lg:translate-x-0`}>
         <div className="flex items-center h-14 px-3 border-b border-gray-200 flex-shrink-0">
           <div className="w-8 h-8 bg-brand-800 rounded-lg flex items-center justify-center flex-shrink-0">
             <Building2 className="h-4 w-4 text-white" />
@@ -95,7 +105,7 @@ export default function Layout() {
               <div className="text-[10px] text-gray-400 leading-tight">{profile?.nombre}</div>
             </div>
           )}
-          <button onClick={toggleCollapse} className={`p-1 hover:bg-gray-100 rounded flex-shrink-0 ${collapsed ? 'mx-auto' : ''}`}>
+          <button onClick={toggleCollapse} className={`p-1 hover:bg-gray-100 rounded flex-shrink-0 hidden lg:block ${collapsed ? 'mx-auto' : ''}`}>
             {collapsed ? <Menu className="h-4 w-4 text-gray-500" /> : <X className="h-4 w-4 text-gray-500" />}
           </button>
         </div>
@@ -117,6 +127,7 @@ export default function Layout() {
                   const Icon = item.icon;
                   return (
                     <NavLink key={item.path} to={item.path} end={item.path === '/'}
+                      onClick={() => setMobileOpen(false)}
                       className={({ isActive }) =>
                         `flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm transition-colors ${isActive ? 'bg-brand-50 text-brand-800 font-medium' : 'text-gray-600 hover:bg-gray-100'} ${collapsed ? 'justify-center' : ''}`
                       }
@@ -134,7 +145,7 @@ export default function Layout() {
 
         <div className="border-t border-gray-200 p-2 flex-shrink-0">
           {!collapsed && (
-            <NavLink to="/configuracion" className="flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-100 mb-1">
+            <NavLink to="/configuracion" onClick={() => setMobileOpen(false)} className="flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-100 mb-1">
               <Settings className="h-4 w-4" />
               <span>Configuración</span>
             </NavLink>
@@ -146,8 +157,11 @@ export default function Layout() {
         </div>
       </aside>
 
-      <header className={`fixed top-0 right-0 h-14 bg-white border-b border-gray-200 z-30 flex items-center justify-between px-4 transition-all duration-200 ${collapsed ? 'left-16' : 'left-56'}`}>
+      <header className={`fixed top-0 right-0 h-14 bg-white border-b border-gray-200 z-20 flex items-center justify-between px-4 transition-all duration-200 left-0 lg:${collapsed ? 'left-16' : 'left-56'}`}>
         <div className="flex items-center gap-2">
+          <button onClick={() => setMobileOpen(true)} className="lg:hidden p-1 hover:bg-gray-100 rounded">
+            <Menu className="h-5 w-5 text-gray-600" />
+          </button>
           <span className="text-sm text-gray-500">Hola, <strong className="text-gray-900">{profile.nombre}</strong></span>
           <span className="text-xs bg-brand-100 text-brand-800 px-2 py-0.5 rounded-full font-medium">{profile.rol}</span>
         </div>
@@ -156,8 +170,8 @@ export default function Layout() {
         </div>
       </header>
 
-      <main className={`pt-14 transition-all duration-200 min-h-screen ${collapsed ? 'pl-16' : 'pl-56'}`}>
-        <div className="p-4 sm:p-6">
+      <main className={`pt-14 transition-all duration-200 min-h-screen lg:${collapsed ? 'pl-16' : 'pl-56'}`}>
+        <div className="p-3 sm:p-6">
           <Outlet />
         </div>
       </main>
