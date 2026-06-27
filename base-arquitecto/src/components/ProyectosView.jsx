@@ -142,7 +142,7 @@ export default function ProyectosView({ profile }) {
                       <td className="px-3 py-2 font-mono font-medium text-brand-700 whitespace-nowrap">{p.codigo}</td>
                       <td className="px-3 py-2">
                         <div className="font-medium text-gray-900">{p.nombre}</div>
-                        {p.descripcion && <div className="text-xs text-gray-500 truncate max-w-xs">{p.descripcion}</div>}
+                        {p.descripcion && <div className="text-xs text-gray-500 whitespace-normal">{p.descripcion}</div>}
                       </td>
                       <td className="px-3 py-2">
                         <div className="text-gray-900">{p.cliente_nombre}</div>

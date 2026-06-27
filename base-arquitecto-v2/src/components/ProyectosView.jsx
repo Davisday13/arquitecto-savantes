@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { formatCurrency, formatDate } from '../lib/utils';
-import { ESTADOS_PROYECTO } from '../lib/constants';
+import { ESTADOS_PROYECTO, FASES_OBRA_DEFAULT, SUBETAPAS_DISENO_DEFAULT } from '../lib/constants';
 import { Card, Badge } from './ui/Card';
 import Button from './ui/Button';
 import Modal from './ui/Modal';
@@ -152,12 +152,42 @@ function ProyectoWizardModal({ open, onClose, profile }) {
     moneda: 'PAB', fecha_inicio: '', fecha_fin_est: '',
   });
 
-  const [etapas, setEtapas] = useState([
-    { id: 1, nombre: 'Obra', tipo: 'OBRA', orden: 0, peso_pct: 100,
-      sub_etapas: [
-        { id: 11, nombre: 'Fase 1', orden: 0, peso_pct: 100, monto: 0 },
-      ] },
-  ]);
+  const getDefaultEtapas = () => {
+    let id = 1;
+    const result = [];
+    result.push({
+      id: id++,
+      nombre: 'Diseño',
+      tipo: 'DISENO',
+      orden: 0,
+      peso_pct: 20,
+      sub_etapas: SUBETAPAS_DISENO_DEFAULT.map((s, j) => ({
+        id: id++,
+        nombre: s.nombre,
+        orden: j,
+        peso_pct: s.peso_pct,
+        monto: 0,
+      })),
+    });
+    FASES_OBRA_DEFAULT.forEach((f, i) => {
+      result.push({
+        id: id++,
+        nombre: f.fase,
+        tipo: 'OBRA',
+        orden: i + 1,
+        peso_pct: f.peso,
+        sub_etapas: f.sub_etapas.map((nombre, j) => ({
+          id: id++,
+          nombre,
+          orden: j,
+          peso_pct: 0,
+          monto: 0,
+        })),
+      });
+    });
+    return result;
+  };
+  const [etapas, setEtapas] = useState(getDefaultEtapas());
   const [showFormCliente, setShowFormCliente] = useState(false);
 
   useEffect(() => {
@@ -168,7 +198,16 @@ function ProyectoWizardModal({ open, onClose, profile }) {
 
   const addEtapa = (tipo) => {
     const id = nextId(etapas);
-    setEtapas([...etapas, { id, nombre: tipo === 'DISENO' ? 'Diseño' : 'Obra', tipo, orden: etapas.length, peso_pct: 10, sub_etapas: tipo === 'DISENO' ? [{ id: nextId(etapas.flatMap(e => e.sub_etapas)), nombre: 'Nueva sub-etapa', orden: 0, peso_pct: 100, monto: 0 }] : [] }]);
+    const subs = tipo === 'DISENO'
+      ? SUBETAPAS_DISENO_DEFAULT.map((s, j) => ({
+          id: nextId(etapas.flatMap(e => e.sub_etapas)) + j,
+          nombre: s.nombre,
+          orden: j,
+          peso_pct: s.peso_pct,
+          monto: 0,
+        }))
+      : [];
+    setEtapas([...etapas, { id, nombre: tipo === 'DISENO' ? 'Diseño' : 'Obra', tipo, orden: etapas.length, peso_pct: 10, sub_etapas: subs }]);
   };
 
   const addSubEtapa = (etapaId) => {
@@ -227,6 +266,20 @@ function ProyectoWizardModal({ open, onClose, profile }) {
         created_by: profile?.id,
       }).select('id_proyecto').single();
       if (err1) throw err1;
+
+      // Crear presupuesto por categoria (5 partidas)
+      try {
+        const presupuestoData = [
+          { categoria: 'MATERIALES' },
+          { categoria: 'MANO_OBRA' },
+          { categoria: 'RENTABILIDAD' },
+          { categoria: 'GARANTIA' },
+          { categoria: 'HERRAMIENTAS' },
+        ].map(c => ({ ...c, id_proyecto: proy.id_proyecto, monto_estimado: 0, monto_gastado: 0 }));
+        await supabase.from('proyecto_presupuesto').insert(presupuestoData);
+      } catch (e) {
+        console.warn('Tabla proyecto_presupuesto no existe, se omite', e);
+      }
 
       // Crear etapas y sub-etapas
       for (const etapa of etapas) {

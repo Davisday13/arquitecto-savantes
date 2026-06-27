@@ -7,7 +7,7 @@ import Campanita from './Campanita';
 import {
   LayoutDashboard, FolderOpen, DollarSign, Wallet, PieChart, Users, UserCog,
   FileBarChart, Settings, Bell, LogOut, Menu, X, ChevronDown, ChevronRight, Building2,
-  Package, ClipboardList,
+  Package, ClipboardList, Calculator,
 } from 'lucide-react';
 
 const grupos = [
@@ -19,6 +19,7 @@ const grupos = [
     { path: '/clientes', label: 'Clientes', icon: Users, perm: 'clientes' },
   ]},
   { label: 'Finanzas', items: [
+    { path: '/presupuesto', label: 'Presupuesto', icon: Calculator, perm: 'pagos' },
     { path: '/pagos', label: 'Pagos', icon: DollarSign, perm: 'pagos' },
     { path: '/gastos', label: 'Gastos', icon: Wallet, perm: 'gastos' },
     { path: '/estado-cuenta', label: 'Estado de cuenta', icon: PieChart, perm: 'estado_cuenta' },
@@ -80,6 +81,8 @@ export default function Layout() {
   };
 
   const sidebarWidth = collapsed ? 'w-16' : 'w-56';
+  const mainPadding = collapsed ? 'lg:pl-16' : 'lg:pl-56';
+  const headerLeft = collapsed ? 'lg:left-16' : 'lg:left-56';
 
   if (!profile) return null;
 
@@ -102,7 +105,7 @@ export default function Layout() {
           {!collapsed && (
             <div className="ml-2.5 truncate flex-1">
               <div className="text-sm font-bold text-gray-900 leading-tight">{empresa?.nombre_empresa || 'Arquitecto'}</div>
-              <div className="text-[10px] text-gray-400 leading-tight">{profile?.nombre}</div>
+              <div className="text-[10px] text-gray-400 leading-tight">{profile?.nombre} &middot; <strong>ACOSTA</strong></div>
             </div>
           )}
           <button onClick={toggleCollapse} className={`p-1 hover:bg-gray-100 rounded flex-shrink-0 hidden lg:block ${collapsed ? 'mx-auto' : ''}`}>
@@ -157,7 +160,7 @@ export default function Layout() {
         </div>
       </aside>
 
-      <header className={`fixed top-0 right-0 h-14 bg-white border-b border-gray-200 z-20 flex items-center justify-between px-4 transition-all duration-200 left-0 lg:${collapsed ? 'left-16' : 'left-56'}`}>
+      <header className={`fixed top-0 right-0 h-14 bg-white border-b border-gray-200 z-20 flex items-center justify-between px-4 transition-all duration-200 left-0 ${headerLeft}`}>
         <div className="flex items-center gap-2">
           <button onClick={() => setMobileOpen(true)} className="lg:hidden p-1 hover:bg-gray-100 rounded">
             <Menu className="h-5 w-5 text-gray-600" />
@@ -170,7 +173,7 @@ export default function Layout() {
         </div>
       </header>
 
-      <main className={`pt-14 transition-all duration-200 min-h-screen lg:${collapsed ? 'pl-16' : 'pl-56'}`}>
+      <main className={`pt-14 transition-all duration-200 min-h-screen ${mainPadding}`}>
         <div className="p-3 sm:p-6">
           <Outlet />
         </div>

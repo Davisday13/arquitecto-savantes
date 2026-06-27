@@ -114,7 +114,7 @@ export default function EstadoCuentaView() {
               <div className="space-y-1 max-h-40 overflow-y-auto">
                 {data.gastos.map(g => (
                   <div key={g.id_gasto} className="flex items-center justify-between text-xs p-1.5 bg-gray-50 rounded">
-                    <span className="truncate mr-1">{g.descripcion}</span>
+                    <span className="whitespace-normal mr-1 break-words flex-1">{g.descripcion}</span>
                     <span className="font-mono text-red-600">{formatCurrency(g.monto)}</span>
                   </div>
                 ))}

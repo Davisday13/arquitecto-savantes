@@ -207,6 +207,16 @@ create table if not exists proyecto_gastos (
   created_by   uuid references usuarios(id)
 );
 
+-- 2.8 PRESUPUESTO POR CATEGORÍA
+create table if not exists proyecto_presupuesto (
+  id_partida     uuid primary key default gen_random_uuid(),
+  id_proyecto    uuid not null references proyectos(id_proyecto) on delete cascade,
+  categoria      text not null check (categoria in ('MATERIALES','MANO_OBRA','RENTABILIDAD','GARANTIA','HERRAMIENTAS')),
+  monto_estimado numeric(14,2) not null default 0,
+  monto_gastado  numeric(14,2) not null default 0,
+  created_at     timestamptz default now()
+);
+
 -- ============================================================
 -- 3. ÍNDICES
 -- ============================================================
@@ -506,3 +516,34 @@ from proyectos;
 insert into configuracion_empresa (nombre_empresa, moneda_simbolo, moneda_codigo, itbms_default_pct)
 values ('Mi Empresa de Arquitectura', 'B/.', 'PAB', 7.00)
 on conflict (id) do nothing;
+
+--
+-- Insertar fases de obra predeterminadas (ejecutar por proyecto)
+-- Reemplazar <ID_PROYECTO> con el UUID real:
+--
+-- do $$
+-- declare
+--   vid uuid := '<ID_PROYECTO>';
+--   veid uuid;
+-- begin
+--   insert into proyecto_etapas (id_proyecto, nombre, orden, peso_porcentaje) values (vid, 'PRELIMINAR', 0, 5) returning id_etapa into veid;
+--     insert into proyecto_sub_etapas (id_etapa, nombre, orden, peso_porcentaje, estado) values (veid, 'Permisos',0,0,'PENDIENTE'),(veid,'Desmonte y limpieza',1,0,'PENDIENTE'),(veid,'Caseta',2,0,'PENDIENTE'),(veid,'Medidor temporal',3,0,'PENDIENTE'),(veid,'Baño',4,0,'PENDIENTE'),(veid,'Conexión a agua',5,0,'PENDIENTE');
+--   insert into proyecto_etapas (id_proyecto, nombre, orden, peso_porcentaje) values (vid, 'MARCACIÓN', 1, 5) returning id_etapa into veid;
+--     insert into proyecto_sub_etapas (id_etapa, nombre, orden, peso_porcentaje, estado) values (veid,'Trazado y nivelación',0,0,'PENDIENTE'),(veid,'Movimiento de tierra',1,0,'PENDIENTE'),(veid,'Replanteo',2,0,'PENDIENTE');
+--   insert into proyecto_etapas (id_proyecto, nombre, orden, peso_porcentaje) values (vid, 'CIMIENTOS / FUNDACIÓN', 2, 15) returning id_etapa into veid;
+--     insert into proyecto_sub_etapas (id_etapa, nombre, orden, peso_porcentaje, estado) values (veid,'Trazado fundación',0,0,'PENDIENTE'),(veid,'Excavación fundación',1,0,'PENDIENTE'),(veid,'Armado acero',2,0,'PENDIENTE'),(veid,'Colocación acero',3,0,'PENDIENTE'),(veid,'Vaciado concreto',4,0,'PENDIENTE'),(veid,'Muros de cimentación',5,0,'PENDIENTE');
+--   insert into proyecto_etapas (id_proyecto, nombre, orden, peso_porcentaje) values (vid, 'LOSAS', 3, 10) returning id_etapa into veid;
+--     insert into proyecto_sub_etapas (id_etapa, nombre, orden, peso_porcentaje, estado) values (veid,'Trazado pisos',0,0,'PENDIENTE'),(veid,'Formaletas pisos',1,0,'PENDIENTE'),(veid,'Instalaciones plomería',2,0,'PENDIENTE'),(veid,'Instalaciones eléctricas',3,0,'PENDIENTE'),(veid,'Vaciado de concreto',4,0,'PENDIENTE');
+--   insert into proyecto_etapas (id_proyecto, nombre, orden, peso_porcentaje) values (vid, 'MUROS Y COLUMNAS', 4, 20) returning id_etapa into veid;
+--     insert into proyecto_sub_etapas (id_etapa, nombre, orden, peso_porcentaje, estado) values (veid,'Trazado paredes',0,0,'PENDIENTE'),(veid,'Formaletas columnas',1,0,'PENDIENTE'),(veid,'Formaletas vigas',2,0,'PENDIENTE'),(veid,'Armado acero',3,0,'PENDIENTE'),(veid,'Colocación acero',4,0,'PENDIENTE'),(veid,'Vaciado concreto',5,0,'PENDIENTE'),(veid,'Bloqueo paredes',6,0,'PENDIENTE'),(veid,'Instalaciones eléctricas',7,0,'PENDIENTE'),(veid,'Instalaciones plomería',8,0,'PENDIENTE'),(veid,'Repello y mochetas',9,0,'PENDIENTE');
+--   insert into proyecto_etapas (id_proyecto, nombre, orden, peso_porcentaje) values (vid, 'CUBIERTA', 5, 10) returning id_etapa into veid;
+--     insert into proyecto_sub_etapas (id_etapa, nombre, orden, peso_porcentaje, estado) values (veid,'Estructura de cubierta',0,0,'PENDIENTE'),(veid,'Instalación aislantes',1,0,'PENDIENTE'),(veid,'Instalación de cubierta',2,0,'PENDIENTE'),(veid,'Instalación eléctrica',3,0,'PENDIENTE'),(veid,'Refuerzos de techo',4,0,'PENDIENTE');
+--   insert into proyecto_etapas (id_proyecto, nombre, orden, peso_porcentaje) values (vid, 'PUERTAS Y VENTANAS', 6, 5) returning id_etapa into veid;
+--     insert into proyecto_sub_etapas (id_etapa, nombre, orden, peso_porcentaje, estado) values (veid,'Instalación de puertas',0,0,'PENDIENTE'),(veid,'Instalación de ventanas',1,0,'PENDIENTE');
+--   insert into proyecto_etapas (id_proyecto, nombre, orden, peso_porcentaje) values (vid, 'ACABADOS E INSTALACIONES', 7, 15) returning id_etapa into veid;
+--     insert into proyecto_sub_etapas (id_etapa, nombre, orden, peso_porcentaje, estado) values (veid,'Inst. Sist. Eléctrico',0,0,'PENDIENTE'),(veid,'Inst. Sist. Plomería',1,0,'PENDIENTE'),(veid,'Inst. Artefactos sanitarios',2,0,'PENDIENTE'),(veid,'Inst. Revestimientos',3,0,'PENDIENTE'),(veid,'Inst. Mobiliario',4,0,'PENDIENTE'),(veid,'Aplicación de bases y pinturas',5,0,'PENDIENTE'),(veid,'Inst. Cielorasos',6,0,'PENDIENTE');
+--   insert into proyecto_etapas (id_proyecto, nombre, orden, peso_porcentaje) values (vid, 'TRABAJOS FINALES', 8, 5) returning id_etapa into veid;
+--     insert into proyecto_sub_etapas (id_etapa, nombre, orden, peso_porcentaje, estado) values (veid,'Demolición inst. temporales',0,0,'PENDIENTE'),(veid,'Limpieza interior',1,0,'PENDIENTE'),(veid,'Limpieza exterior',2,0,'PENDIENTE'),(veid,'Labores de jardinería',3,0,'PENDIENTE'),(veid,'Cercas y muros externos',4,0,'PENDIENTE');
+--   insert into proyecto_etapas (id_proyecto, nombre, orden, peso_porcentaje) values (vid, 'ENTREGA', 9, 10) returning id_etapa into veid;
+--     insert into proyecto_sub_etapas (id_etapa, nombre, orden, peso_porcentaje, estado) values (veid,'Permisos de ocupación',0,0,'PENDIENTE'),(veid,'Conexiones eléctricas (NATURGY)',1,0,'PENDIENTE'),(veid,'Conexiones sanitarias (Municipio)',2,0,'PENDIENTE'),(veid,'Conexiones acueducto (Municipio)',3,0,'PENDIENTE'),(veid,'Entrega conforme',4,0,'PENDIENTE');
+-- end $$;

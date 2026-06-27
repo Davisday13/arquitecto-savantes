@@ -162,7 +162,7 @@ export default function CotizacionesView({ profile }) {
                         <div className="text-xs text-gray-500">{c.numero_cliente}</div>
                       </td>
                       <td className="px-3 py-2 text-xs text-gray-600">{c.proyecto_nombre || '-'}</td>
-                      <td className="px-3 py-2 max-w-xs truncate">{c.asunto || <span className="text-gray-400 italic">-</span>}</td>
+                      <td className="px-3 py-2 whitespace-normal">{c.asunto || <span className="text-gray-400 italic">-</span>}</td>
                       <td className="px-3 py-2 whitespace-nowrap text-gray-600">{formatDate(c.fecha_emision)}</td>
                       <td className="px-3 py-2 text-right font-medium">{formatCurrency(c.total_general)}</td>
                       <td className="px-3 py-2 text-center">

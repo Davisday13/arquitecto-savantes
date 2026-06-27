@@ -5,6 +5,7 @@ import LoginView from './components/LoginView';
 import Layout from './components/Layout';
 import DashboardView from './components/DashboardView';
 import ProyectosView from './components/ProyectosView';
+import PresupuestoView from './components/PresupuestoView';
 import ClientesView from './components/ClientesView';
 import PagosView from './components/PagosView';
 import GastosView from './components/GastosView';
@@ -43,6 +44,7 @@ function AppRoutes() {
       <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
         <Route index element={<DashboardView />} />
         <Route path="proyectos" element={<ProyectosView />} />
+        <Route path="presupuesto" element={<PresupuestoView />} />
         <Route path="clientes" element={<ClientesView />} />
         <Route path="pagos" element={<PagosView />} />
         <Route path="gastos" element={<GastosView />} />

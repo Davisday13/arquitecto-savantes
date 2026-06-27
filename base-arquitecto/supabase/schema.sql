@@ -594,6 +594,38 @@ ALTER TABLE public.configuracion_empresa DISABLE ROW LEVEL SECURITY;
 --     "usuarios":true,"permisos":true,"reportes":true,"auditoria":true,"configuracion":true}'::jsonb
 -- );
 
+--
+-- Insertar las 10 fases de construcción predeterminadas
+-- (se ejecuta automáticamente al crear un proyecto desde el frontend,
+--  o manualmente con este script):
+--
+-- DO $$
+-- DECLARE
+--   v_id_proyecto UUID := '<ID_DEL_PROYECTO>';
+--   v_etapa_id UUID;
+-- BEGIN
+--   INSERT INTO public.etapas (id_proyecto, nombre, orden, peso_porcentaje, presupuesto) VALUES (v_id_proyecto, 'PRELIMINAR', 0, 5, 0) RETURNING id_etapa INTO v_etapa_id;
+--     INSERT INTO public.sub_etapas (id_etapa, nombre, orden, peso_porcentaje, presupuesto, estado) VALUES (v_etapa_id, 'Permisos', 0, 0, 0, 'PENDIENTE'), (v_etapa_id, 'Desmonte y limpieza', 1, 0, 0, 'PENDIENTE'), (v_etapa_id, 'Caseta', 2, 0, 0, 'PENDIENTE'), (v_etapa_id, 'Medidor temporal', 3, 0, 0, 'PENDIENTE'), (v_etapa_id, 'Baño', 4, 0, 0, 'PENDIENTE'), (v_etapa_id, 'Conexión a agua', 5, 0, 0, 'PENDIENTE');
+--   INSERT INTO public.etapas (id_proyecto, nombre, orden, peso_porcentaje, presupuesto) VALUES (v_id_proyecto, 'MARCACIÓN', 1, 5, 0) RETURNING id_etapa INTO v_etapa_id;
+--     INSERT INTO public.sub_etapas (id_etapa, nombre, orden, peso_porcentaje, presupuesto, estado) VALUES (v_etapa_id, 'Trazado y nivelación', 0, 0, 0, 'PENDIENTE'), (v_etapa_id, 'Movimiento de tierra', 1, 0, 0, 'PENDIENTE'), (v_etapa_id, 'Replanteo', 2, 0, 0, 'PENDIENTE');
+--   INSERT INTO public.etapas (id_proyecto, nombre, orden, peso_porcentaje, presupuesto) VALUES (v_id_proyecto, 'CIMIENTOS / FUNDACIÓN', 2, 15, 0) RETURNING id_etapa INTO v_etapa_id;
+--     INSERT INTO public.sub_etapas (id_etapa, nombre, orden, peso_porcentaje, presupuesto, estado) VALUES (v_etapa_id, 'Trazado fundación', 0, 0, 0, 'PENDIENTE'), (v_etapa_id, 'Excavación fundación', 1, 0, 0, 'PENDIENTE'), (v_etapa_id, 'Armado acero', 2, 0, 0, 'PENDIENTE'), (v_etapa_id, 'Colocación acero', 3, 0, 0, 'PENDIENTE'), (v_etapa_id, 'Vaciado concreto', 4, 0, 0, 'PENDIENTE'), (v_etapa_id, 'Muros de cimentación', 5, 0, 0, 'PENDIENTE');
+--   INSERT INTO public.etapas (id_proyecto, nombre, orden, peso_porcentaje, presupuesto) VALUES (v_id_proyecto, 'LOSAS', 3, 10, 0) RETURNING id_etapa INTO v_etapa_id;
+--     INSERT INTO public.sub_etapas (id_etapa, nombre, orden, peso_porcentaje, presupuesto, estado) VALUES (v_etapa_id, 'Trazado pisos', 0, 0, 0, 'PENDIENTE'), (v_etapa_id, 'Formaletas pisos', 1, 0, 0, 'PENDIENTE'), (v_etapa_id, 'Instalaciones plomería', 2, 0, 0, 'PENDIENTE'), (v_etapa_id, 'Instalaciones eléctricas', 3, 0, 0, 'PENDIENTE'), (v_etapa_id, 'Vaciado de concreto', 4, 0, 0, 'PENDIENTE');
+--   INSERT INTO public.etapas (id_proyecto, nombre, orden, peso_porcentaje, presupuesto) VALUES (v_id_proyecto, 'MUROS Y COLUMNAS', 4, 20, 0) RETURNING id_etapa INTO v_etapa_id;
+--     INSERT INTO public.sub_etapas (id_etapa, nombre, orden, peso_porcentaje, presupuesto, estado) VALUES (v_etapa_id, 'Trazado paredes', 0, 0, 0, 'PENDIENTE'), (v_etapa_id, 'Formaletas columnas', 1, 0, 0, 'PENDIENTE'), (v_etapa_id, 'Formaletas vigas', 2, 0, 0, 'PENDIENTE'), (v_etapa_id, 'Armado acero', 3, 0, 0, 'PENDIENTE'), (v_etapa_id, 'Colocación acero', 4, 0, 0, 'PENDIENTE'), (v_etapa_id, 'Vaciado concreto', 5, 0, 0, 'PENDIENTE'), (v_etapa_id, 'Bloqueo paredes', 6, 0, 0, 'PENDIENTE'), (v_etapa_id, 'Instalaciones eléctricas', 7, 0, 0, 'PENDIENTE'), (v_etapa_id, 'Instalaciones plomería', 8, 0, 0, 'PENDIENTE'), (v_etapa_id, 'Repello y mochetas', 9, 0, 0, 'PENDIENTE');
+--   INSERT INTO public.etapas (id_proyecto, nombre, orden, peso_porcentaje, presupuesto) VALUES (v_id_proyecto, 'CUBIERTA', 5, 10, 0) RETURNING id_etapa INTO v_etapa_id;
+--     INSERT INTO public.sub_etapas (id_etapa, nombre, orden, peso_porcentaje, presupuesto, estado) VALUES (v_etapa_id, 'Estructura de cubierta', 0, 0, 0, 'PENDIENTE'), (v_etapa_id, 'Instalación aislantes', 1, 0, 0, 'PENDIENTE'), (v_etapa_id, 'Instalación de cubierta', 2, 0, 0, 'PENDIENTE'), (v_etapa_id, 'Instalación eléctrica', 3, 0, 0, 'PENDIENTE'), (v_etapa_id, 'Refuerzos de techo', 4, 0, 0, 'PENDIENTE');
+--   INSERT INTO public.etapas (id_proyecto, nombre, orden, peso_porcentaje, presupuesto) VALUES (v_id_proyecto, 'PUERTAS Y VENTANAS', 6, 5, 0) RETURNING id_etapa INTO v_etapa_id;
+--     INSERT INTO public.sub_etapas (id_etapa, nombre, orden, peso_porcentaje, presupuesto, estado) VALUES (v_etapa_id, 'Instalación de puertas', 0, 0, 0, 'PENDIENTE'), (v_etapa_id, 'Instalación de ventanas', 1, 0, 0, 'PENDIENTE');
+--   INSERT INTO public.etapas (id_proyecto, nombre, orden, peso_porcentaje, presupuesto) VALUES (v_id_proyecto, 'ACABADOS E INSTALACIONES', 7, 15, 0) RETURNING id_etapa INTO v_etapa_id;
+--     INSERT INTO public.sub_etapas (id_etapa, nombre, orden, peso_porcentaje, presupuesto, estado) VALUES (v_etapa_id, 'Inst. Sist. Eléctrico', 0, 0, 0, 'PENDIENTE'), (v_etapa_id, 'Inst. Sist. Plomería', 1, 0, 0, 'PENDIENTE'), (v_etapa_id, 'Inst. Artefactos sanitarios', 2, 0, 0, 'PENDIENTE'), (v_etapa_id, 'Inst. Revestimientos', 3, 0, 0, 'PENDIENTE'), (v_etapa_id, 'Inst. Mobiliario', 4, 0, 0, 'PENDIENTE'), (v_etapa_id, 'Aplicación de bases y pinturas', 5, 0, 0, 'PENDIENTE'), (v_etapa_id, 'Inst. Cielorasos', 6, 0, 0, 'PENDIENTE');
+--   INSERT INTO public.etapas (id_proyecto, nombre, orden, peso_porcentaje, presupuesto) VALUES (v_id_proyecto, 'TRABAJOS FINALES', 8, 5, 0) RETURNING id_etapa INTO v_etapa_id;
+--     INSERT INTO public.sub_etapas (id_etapa, nombre, orden, peso_porcentaje, presupuesto, estado) VALUES (v_etapa_id, 'Demolición inst. temporales', 0, 0, 0, 'PENDIENTE'), (v_etapa_id, 'Limpieza interior', 1, 0, 0, 'PENDIENTE'), (v_etapa_id, 'Limpieza exterior', 2, 0, 0, 'PENDIENTE'), (v_etapa_id, 'Labores de jardinería', 3, 0, 0, 'PENDIENTE'), (v_etapa_id, 'Cercas y muros externos', 4, 0, 0, 'PENDIENTE');
+--   INSERT INTO public.etapas (id_proyecto, nombre, orden, peso_porcentaje, presupuesto) VALUES (v_id_proyecto, 'ENTREGA', 9, 10, 0) RETURNING id_etapa INTO v_etapa_id;
+--     INSERT INTO public.sub_etapas (id_etapa, nombre, orden, peso_porcentaje, presupuesto, estado) VALUES (v_etapa_id, 'Permisos de ocupación', 0, 0, 0, 'PENDIENTE'), (v_etapa_id, 'Conexiones eléctricas (NATURGY)', 1, 0, 0, 'PENDIENTE'), (v_etapa_id, 'Conexiones sanitarias (Municipio)', 2, 0, 0, 'PENDIENTE'), (v_etapa_id, 'Conexiones acueducto (Municipio)', 3, 0, 0, 'PENDIENTE'), (v_etapa_id, 'Entrega conforme', 4, 0, 0, 'PENDIENTE');
+-- END $$;
+
 -- =========================================================
 -- FIN DEL SCHEMA
 -- =========================================================

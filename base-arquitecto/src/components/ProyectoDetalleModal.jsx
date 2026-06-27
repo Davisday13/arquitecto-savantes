@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Building2, Plus, Trash2, Pencil, CheckCircle2, FileText, DollarSign, History,
+  Building2, Trash2, Pencil, CheckCircle2, FileText, DollarSign, History, RefreshCw,
 } from 'lucide-react';
 import Modal from './ui/Modal';
 import Button from './ui/Button';
 import { Input, Select, Textarea } from './ui/Input';
 import { supabase } from '../lib/supabase';
 import { formatCurrency, formatDate, formatDateTime } from '../lib/utils';
-import { ESTADOS_PROYECTO_LABEL, ESTADOS_PROYECTO_COLOR, ESTADOS_SUB_ETAPA_LABEL, ESTADOS_SUB_ETAPA_COLOR } from '../lib/constants';
+import { ESTADOS_PROYECTO_LABEL, ESTADOS_PROYECTO_COLOR, ESTADOS_SUB_ETAPA_LABEL, ESTADOS_SUB_ETAPA_COLOR, FASES_CONSTRUCCION } from '../lib/constants';
 
 const SAVANTE_BLUE = '#1a3a4a';
 
@@ -37,23 +37,31 @@ export default function ProyectoDetalleModal({ open, onClose, proyectoId, profil
     cargar();
   };
 
-  const agregarEtapa = () => {
-    const orden = etapas.length;
-    const nombre = prompt('Nombre de la etapa:');
-    if (!nombre) return;
-    supabase.from('etapas').insert({
-      id_proyecto: proyectoId, nombre, orden, peso_porcentaje: 0, presupuesto: 0,
-    }).then(() => cargar());
-  };
-
-  const agregarSubEtapa = (idEtapa) => {
-    const etapa = etapas.find(e => e.id_etapa === idEtapa);
-    const orden = etapa?.sub_etapas?.length || 0;
-    const nombre = prompt('Nombre de la sub-etapa:');
-    if (!nombre) return;
-    supabase.from('sub_etapas').insert({
-      id_etapa: idEtapa, nombre, orden, peso_porcentaje: 0, presupuesto: 0, estado: 'PENDIENTE',
-    }).then(() => cargar());
+  const regenerarFases = async () => {
+    if (!confirm('¿Regenerar las fases de construcción predeterminadas? Se conservarán las existentes.')) return;
+    const fasesExistentes = new Set(etapas.map(e => e.nombre));
+    const nuevasEtapas = [];
+    FASES_CONSTRUCCION.forEach((f, i) => {
+      if (!fasesExistentes.has(f.fase)) {
+        nuevasEtapas.push({
+          id_proyecto: proyectoId, nombre: f.fase, orden: i, peso_porcentaje: f.peso, presupuesto: 0,
+        });
+      }
+    });
+    if (nuevasEtapas.length === 0) return alert('Todas las fases ya están creadas.');
+    const { data: creadas } = await supabase.from('etapas').insert(nuevasEtapas).select();
+    if (creadas) {
+      for (const etapa of creadas) {
+        const f = FASES_CONSTRUCCION.find(x => x.fase === etapa.nombre);
+        if (f) {
+          const subData = f.sub_etapas.map((nombre, j) => ({
+            id_etapa: etapa.id_etapa, nombre, orden: j, peso_porcentaje: 0, presupuesto: 0, estado: 'PENDIENTE',
+          }));
+          await supabase.from('sub_etapas').insert(subData);
+        }
+      }
+    }
+    cargar();
   };
 
   const actualizarAvance = async (idSubEtapa) => {
@@ -188,9 +196,9 @@ export default function ProyectoDetalleModal({ open, onClose, proyectoId, profil
           {/* Etapas y Sub-etapas */}
           <div className="bg-white border rounded overflow-hidden">
             <div className="flex items-center justify-between p-3 border-b bg-gray-50">
-              <h3 className="text-sm font-semibold text-gray-900">Etapas del proyecto</h3>
-              <Button size="sm" variant="outline" onClick={agregarEtapa}>
-                <Plus className="h-3 w-3" /> Agregar etapa
+              <h3 className="text-sm font-semibold text-gray-900">Fases de construcción</h3>
+              <Button size="sm" variant="outline" onClick={regenerarFases}>
+                <RefreshCw className="h-3 w-3" /> Regenerar fases
               </Button>
             </div>
 
@@ -208,9 +216,6 @@ export default function ProyectoDetalleModal({ open, onClose, proyectoId, profil
                         <span className="text-xs text-gray-500">(peso: {Number(etapa.peso_porcentaje).toFixed(0)}%)</span>
                       </div>
                       <div className="flex gap-1">
-                        <Button size="sm" variant="outline" onClick={() => agregarSubEtapa(etapa.id_etapa)} className="text-xs">
-                          <Plus className="h-3 w-3" /> Sub-etapa
-                        </Button>
                         <button onClick={() => eliminarEtapa(etapa.id_etapa)} className="p-1 hover:bg-red-100 rounded text-red-600">
                           <Trash2 className="h-3 w-3" />
                         </button>
@@ -228,7 +233,7 @@ export default function ProyectoDetalleModal({ open, onClose, proyectoId, profil
                             <div key={se.id_sub_etapa} className="flex items-center gap-2 p-1.5 rounded hover:bg-gray-50 group">
                               <div className={`w-2 h-2 rounded-full ${ESTADOS_SUB_ETAPA_COLOR[se.estado]?.split(' ')[0] || 'bg-gray-300'}`} />
                               <div className="flex-1 min-w-0">
-                                <div className="text-sm text-gray-700 truncate">{se.nombre}</div>
+                                <div className="text-sm text-gray-700 whitespace-normal">{se.nombre}</div>
                                 {ultimoAvance && (
                                   <div className="text-xs text-gray-500">
                                     {pct.toFixed(0)}% - {formatDate(ultimoAvance.fecha_actualizacion)}

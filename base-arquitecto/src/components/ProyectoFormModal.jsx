@@ -6,6 +6,7 @@ import Modal from './ui/Modal';
 import Button from './ui/Button';
 import { Input, Select, Textarea } from './ui/Input';
 import { supabase } from '../lib/supabase';
+import { FASES_CONSTRUCCION } from '../lib/constants';
 import ClienteRapidoModal from './ClienteRapidoModal';
 
 export default function ProyectoFormModal({ open, onClose, proyectoId, profile }) {
@@ -88,7 +89,7 @@ export default function ProyectoFormModal({ open, onClose, proyectoId, profile }
         }).eq('id_proyecto', proyectoId);
         if (e) throw e;
       } else {
-        const { error: e } = await supabase.from('proyectos').insert({
+        const { data: newProject, error: e } = await supabase.from('proyectos').insert({
           nombre: form.nombre,
           descripcion: form.descripcion || null,
           id_cliente: form.id_cliente,
@@ -97,8 +98,35 @@ export default function ProyectoFormModal({ open, onClose, proyectoId, profile }
           fecha_estimada_entrega: form.fecha_estimada_entrega || null,
           estado: form.estado,
           created_by: profile?.id || null,
-        });
+        }).select().single();
         if (e) throw e;
+
+        if (newProject) {
+          const etapasData = FASES_CONSTRUCCION.map((f, i) => ({
+            id_proyecto: newProject.id_proyecto,
+            nombre: f.fase,
+            orden: i,
+            peso_porcentaje: f.peso,
+            presupuesto: 0,
+          }));
+          const { data: etapasCreadas } = await supabase.from('etapas').insert(etapasData).select();
+          if (etapasCreadas) {
+            const subEtapasData = [];
+            etapasCreadas.forEach((etapa, idx) => {
+              FASES_CONSTRUCCION[idx].sub_etapas.forEach((nombre, j) => {
+                subEtapasData.push({
+                  id_etapa: etapa.id_etapa,
+                  nombre,
+                  orden: j,
+                  peso_porcentaje: 0,
+                  presupuesto: 0,
+                  estado: 'PENDIENTE',
+                });
+              });
+            });
+            await supabase.from('sub_etapas').insert(subEtapasData);
+          }
+        }
       }
       onClose();
     } catch (err) {

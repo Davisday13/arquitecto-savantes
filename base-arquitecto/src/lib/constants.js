@@ -151,6 +151,29 @@ export const CATEGORIAS_INVENTARIO_LABEL = {
 
 export const UNIDADES_MEDIDA = ['UND', 'M', 'M2', 'M3', 'KG', 'L', 'GL', 'BOLSA', 'CAJA', 'PAQUETE', 'ROLLO', 'PLIEGO', 'HORA', 'DIA', 'M2'];
 
+export const FASES_CONSTRUCCION = [
+  { fase: 'PRELIMINAR', peso: 5, sub_etapas: ['Permisos', 'Desmonte y limpieza', 'Caseta', 'Medidor temporal', 'Baño', 'Conexión a agua'] },
+  { fase: 'MARCACIÓN', peso: 5, sub_etapas: ['Trazado y nivelación', 'Movimiento de tierra', 'Replanteo'] },
+  { fase: 'CIMIENTOS / FUNDACIÓN', peso: 15, sub_etapas: ['Trazado fundación', 'Excavación fundación', 'Armado acero', 'Colocación acero', 'Vaciado concreto', 'Muros de cimentación'] },
+  { fase: 'LOSAS', peso: 10, sub_etapas: ['Trazado pisos', 'Formaletas pisos', 'Instalaciones plomería', 'Instalaciones eléctricas', 'Vaciado de concreto'] },
+  { fase: 'MUROS Y COLUMNAS', peso: 20, sub_etapas: ['Trazado paredes', 'Formaletas columnas', 'Formaletas vigas', 'Armado acero', 'Colocación acero', 'Vaciado concreto', 'Bloqueo paredes', 'Instalaciones eléctricas', 'Instalaciones plomería', 'Repello y mochetas'] },
+  { fase: 'CUBIERTA', peso: 10, sub_etapas: ['Estructura de cubierta', 'Instalación aislantes', 'Instalación de cubierta', 'Instalación eléctrica', 'Refuerzos de techo'] },
+  { fase: 'PUERTAS Y VENTANAS', peso: 5, sub_etapas: ['Instalación de puertas', 'Instalación de ventanas'] },
+  { fase: 'ACABADOS E INSTALACIONES', peso: 15, sub_etapas: ['Inst. Sist. Eléctrico', 'Inst. Sist. Plomería', 'Inst. Artefactos sanitarios', 'Inst. Revestimientos', 'Inst. Mobiliario', 'Aplicación de bases y pinturas', 'Inst. Cielorasos'] },
+  { fase: 'TRABAJOS FINALES', peso: 5, sub_etapas: ['Demolición inst. temporales', 'Limpieza interior', 'Limpieza exterior', 'Labores de jardinería', 'Cercas y muros externos'] },
+  { fase: 'ENTREGA', peso: 10, sub_etapas: ['Permisos de ocupación', 'Conexiones eléctricas (NATURGY)', 'Conexiones sanitarias (Municipio)', 'Conexiones acueducto (Municipio)', 'Entrega conforme'] },
+];
+
+export const FASES_LABEL = Object.fromEntries(FASES_CONSTRUCCION.map(f => [f.fase, f.fase]));
+
+export const PRESUPUESTO_CATEGORIAS = [
+  { id: 'MATERIALES', label: 'Materiales' },
+  { id: 'MANO_OBRA', label: 'Mano de obra' },
+  { id: 'RENTABILIDAD', label: 'Rentabilidad' },
+  { id: 'GARANTIA', label: 'Garantía' },
+  { id: 'HERRAMIENTAS', label: 'Herramientas' },
+];
+
 export const METODOS_PAGO = ['EFECTIVO', 'TARJETA', 'TRANSFERENCIA', 'YAPPY', 'CHEQUE', 'OTRO'];
 
 export const TASAS_ITBMS = [
