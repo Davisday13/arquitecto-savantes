@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { formatCurrency } from '../lib/utils';
 import { PRESUPUESTO_CATEGORIAS } from '../lib/constants';
-import { Card, Badge } from './ui/Card';
-import Button from './ui/Button';
-import { FolderOpen, Plus, Save } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Card } from './ui/Card';
+import { FolderOpen } from 'lucide-react';
+
+const API_BASE = '';
 
 const COLORES_CATEGORIA = {
   MATERIALES: 'border-l-blue-500',
@@ -30,14 +30,27 @@ export default function PresupuestoView() {
     });
   }, []);
 
+  const apiPresupuesto = async (body) => {
+    const res = await fetch('/api/presupuesto.mjs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    return res.json();
+  };
+
+  const apiPresupuestoGet = async (id_proyecto) => {
+    const res = await fetch(`/api/presupuesto.mjs?id_proyecto=${id_proyecto}`);
+    return res.json();
+  };
+
   const cargarPresupuesto = async (id_proyecto) => {
     setSelected(id_proyecto);
     let partidas = [];
     try {
-      const r = await supabase.from('proyecto_presupuesto').select('*').eq('id_proyecto', id_proyecto);
-      partidas = r.data || [];
+      partidas = await apiPresupuestoGet(id_proyecto);
     } catch (e) {
-      console.warn('Tabla proyecto_presupuesto no existe', e);
+      console.warn('Error cargando presupuesto', e);
     }
     const map = {};
     partidas.forEach(p => { map[p.categoria] = p; });
@@ -54,14 +67,9 @@ export default function PresupuestoView() {
 
   const actualizarMonto = async (categoria, monto) => {
     try {
-      const existente = partidas.find(p => p.categoria === categoria && p.id_proyecto === selected);
-      if (existente) {
-        await supabase.from('proyecto_presupuesto').update({ monto_estimado: monto }).eq('id_partida', existente.id_partida);
-      } else {
-        await supabase.from('proyecto_presupuesto').insert({ id_proyecto: selected, categoria, monto_estimado: monto });
-      }
+      await apiPresupuesto({ id_proyecto: selected, categoria, monto_estimado: monto });
     } catch (e) {
-      alert('La tabla de presupuesto aun no existe en la base de datos. Ejecuta el schema.sql en Supabase.');
+      alert('Error al guardar: ' + e.message);
     }
     cargarPresupuesto(selected);
   };

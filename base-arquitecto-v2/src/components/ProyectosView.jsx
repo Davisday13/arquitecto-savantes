@@ -269,16 +269,16 @@ function ProyectoWizardModal({ open, onClose, profile }) {
 
       // Crear presupuesto por categoria (5 partidas)
       try {
-        const presupuestoData = [
-          { categoria: 'MATERIALES' },
-          { categoria: 'MANO_OBRA' },
-          { categoria: 'RENTABILIDAD' },
-          { categoria: 'GARANTIA' },
-          { categoria: 'HERRAMIENTAS' },
-        ].map(c => ({ ...c, id_proyecto: proy.id_proyecto, monto_estimado: 0, monto_gastado: 0 }));
-        await supabase.from('proyecto_presupuesto').insert(presupuestoData);
+        const categorias = ['MATERIALES', 'MANO_OBRA', 'RENTABILIDAD', 'GARANTIA', 'HERRAMIENTAS'];
+        for (const cat of categorias) {
+          await fetch('/api/presupuesto.mjs', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id_proyecto: proy.id_proyecto, categoria: cat, monto_estimado: 0 })
+          });
+        }
       } catch (e) {
-        console.warn('Tabla proyecto_presupuesto no existe, se omite', e);
+        console.warn('Error creando presupuesto', e);
       }
 
       // Crear etapas y sub-etapas
