@@ -16,68 +16,62 @@ const COLORES_CATEGORIA = {
 };
 
 export default function PresupuestoView() {
-  const navigate = useNavigate();
   const [proyectos, setProyectos] = useState([]);
   const [selected, setSelected] = useState(null);
-  const [partidas, setPartidas] = useState([]);
-  const [gastosPorCategoria, setGastosPorCategoria] = useState({});
+  const [presupuestoMap, setPresupuestoMap] = useState({});
+  const [gastosMap, setGastosMap] = useState({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.from('proyectos').select('id_proyecto, numero_proyecto, nombre, monto_total').order('numero_proyecto').then(({ data }) => {
-      setProyectos(data || []);
+    (async () => {
+      const [{ data: proys }, budgetRes, { data: gastos }] = await Promise.all([
+        supabase.from('proyectos').select('id_proyecto, numero_proyecto, nombre, monto_total').order('numero_proyecto'),
+        fetch('/api/presupuesto.mjs'),
+        supabase.from('proyecto_gastos').select('id_proyecto, categoria, monto'),
+      ]);
+
+      setProyectos(proys || []);
+
+      const pMap = {};
+      (budgetRes.ok ? await budgetRes.json() : []).forEach(p => {
+        if (!pMap[p.id_proyecto]) pMap[p.id_proyecto] = {};
+        pMap[p.id_proyecto][p.categoria] = p;
+      });
+      setPresupuestoMap(pMap);
+
+      const gMap = {};
+      (gastos || []).forEach(g => {
+        if (!gMap[g.id_proyecto]) gMap[g.id_proyecto] = {};
+        gMap[g.id_proyecto][g.categoria] = (gMap[g.id_proyecto][g.categoria] || 0) + Number(g.monto);
+      });
+      setGastosMap(gMap);
+
       setLoading(false);
-    });
+    })();
   }, []);
 
-  const apiPresupuesto = async (body) => {
-    const res = await fetch('/api/presupuesto.mjs', {
+  const actualizarMonto = async (categoria, monto) => {
+    const ok = presupuestoMap[selected]?.[categoria];
+    const body = ok
+      ? { id_proyecto: selected, categoria, monto_estimado: monto }
+      : { id_proyecto: selected, categoria, monto_estimado: monto };
+    await fetch('/api/presupuesto.mjs', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
-    return res.json();
-  };
-
-  const apiPresupuestoGet = async (id_proyecto) => {
-    const res = await fetch(`/api/presupuesto.mjs?id_proyecto=${id_proyecto}`);
-    return res.json();
-  };
-
-  const cargarPresupuesto = async (id_proyecto) => {
-    setSelected(id_proyecto);
-    let partidas = [];
-    try {
-      partidas = await apiPresupuestoGet(id_proyecto);
-    } catch (e) {
-      console.warn('Error cargando presupuesto', e);
-    }
-    const map = {};
-    partidas.forEach(p => { map[p.categoria] = p; });
-    setPartidas(partidas);
-    setGastosPorCategoria(map);
-
-    const { data: gastos } = await supabase.from('proyecto_gastos').select('categoria, monto').eq('id_proyecto', id_proyecto);
-    const gastoMap = {};
-    (gastos || []).forEach(g => {
-      gastoMap[g.categoria] = (gastoMap[g.categoria] || 0) + Number(g.monto);
+    setPresupuestoMap(prev => {
+      const next = { ...prev };
+      if (!next[selected]) next[selected] = {};
+      next[selected] = { ...next[selected], [categoria]: { ...(next[selected][categoria] || {}), monto_estimado: monto } };
+      return next;
     });
-    setGastosPorCategoria(prev => ({ ...prev, _gastos: gastoMap }));
   };
 
-  const actualizarMonto = async (categoria, monto) => {
-    try {
-      await apiPresupuesto({ id_proyecto: selected, categoria, monto_estimado: monto });
-    } catch (e) {
-      alert('Error al guardar: ' + e.message);
-    }
-    cargarPresupuesto(selected);
-  };
-
-  const totalEstimado = partidas.reduce((s, p) => s + Number(p.monto_estimado || 0), 0);
-  const gastosMap = gastosPorCategoria._gastos || {};
-  const totalGastado = Object.values(gastosMap).reduce((s, v) => s + v, 0);
-
+  const partidas = presupuestoMap[selected] || {};
+  const gastosProy = gastosMap[selected] || {};
+  const totalEstimado = Object.values(partidas).reduce((s, p) => s + Number(p.monto_estimado || 0), 0);
+  const totalGastado = Object.values(gastosProy).reduce((s, v) => s + v, 0);
   const proyectoActual = proyectos.find(p => p.id_proyecto === selected);
 
   return (
@@ -87,15 +81,14 @@ export default function PresupuestoView() {
       </h1>
 
       {loading ? (
-        <div className="text-center py-8 text-gray-400">Cargando proyectos...</div>
+        <div className="text-center py-8 text-gray-400">Cargando...</div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-          {/* Sidebar de proyectos */}
           <Card className="lg:col-span-1">
             <h3 className="text-sm font-semibold mb-2">Proyectos</h3>
             <div className="space-y-1">
               {proyectos.map(p => (
-                <button key={p.id_proyecto} onClick={() => cargarPresupuesto(p.id_proyecto)}
+                <button key={p.id_proyecto} onClick={() => setSelected(p.id_proyecto)}
                   className={`w-full text-left p-2 rounded text-sm transition-colors ${selected === p.id_proyecto ? 'bg-brand-50 text-brand-800 font-medium' : 'hover:bg-gray-100 text-gray-700'}`}>
                   <div className="font-medium">{p.nombre}</div>
                   <div className="text-xs text-gray-400">{p.numero_proyecto}</div>
@@ -104,7 +97,6 @@ export default function PresupuestoView() {
             </div>
           </Card>
 
-          {/* Panel de presupuesto */}
           <Card className="lg:col-span-3">
             {!selected ? (
               <div className="p-8 text-center text-gray-400 text-sm">Selecciona un proyecto para ver su presupuesto</div>
@@ -118,18 +110,17 @@ export default function PresupuestoView() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-5 gap-2 text-center text-xs">
-                  <div className="bg-blue-50 p-2 rounded"><div className="font-bold text-blue-700">{formatCurrency(partidas.find(p => p.categoria === 'MATERIALES')?.monto_estimado || 0)}</div>Materiales</div>
-                  <div className="bg-amber-50 p-2 rounded"><div className="font-bold text-amber-700">{formatCurrency(partidas.find(p => p.categoria === 'MANO_OBRA')?.monto_estimado || 0)}</div>Mano de obra</div>
-                  <div className="bg-emerald-50 p-2 rounded"><div className="font-bold text-emerald-700">{formatCurrency(partidas.find(p => p.categoria === 'RENTABILIDAD')?.monto_estimado || 0)}</div>Rentabilidad</div>
-                  <div className="bg-purple-50 p-2 rounded"><div className="font-bold text-purple-700">{formatCurrency(partidas.find(p => p.categoria === 'GARANTIA')?.monto_estimado || 0)}</div>Garant&iacute;a</div>
-                  <div className="bg-orange-50 p-2 rounded"><div className="font-bold text-orange-700">{formatCurrency(partidas.find(p => p.categoria === 'HERRAMIENTAS')?.monto_estimado || 0)}</div>Herramientas</div>
+                  <div className="bg-blue-50 p-2 rounded"><div className="font-bold">{formatCurrency(Number(partidas.MATERIALES?.monto_estimado || 0))}</div>Materiales</div>
+                  <div className="bg-amber-50 p-2 rounded"><div className="font-bold">{formatCurrency(Number(partidas.MANO_OBRA?.monto_estimado || 0))}</div>Mano de obra</div>
+                  <div className="bg-emerald-50 p-2 rounded"><div className="font-bold">{formatCurrency(Number(partidas.RENTABILIDAD?.monto_estimado || 0))}</div>Rentabilidad</div>
+                  <div className="bg-purple-50 p-2 rounded"><div className="font-bold">{formatCurrency(Number(partidas.GARANTIA?.monto_estimado || 0))}</div>Garant&iacute;a</div>
+                  <div className="bg-orange-50 p-2 rounded"><div className="font-bold">{formatCurrency(Number(partidas.HERRAMIENTAS?.monto_estimado || 0))}</div>Herramientas</div>
                 </div>
 
                 <div className="space-y-2">
                   {PRESUPUESTO_CATEGORIAS.map(cat => {
-                    const partida = partidas.find(p => p.categoria === cat.id);
-                    const estimado = Number(partida?.monto_estimado || 0);
-                    const gastado = Number(gastosMap[cat.id] || 0);
+                    const estimado = Number(partidas[cat.id]?.monto_estimado || 0);
+                    const gastado = Number(gastosProy[cat.id] || 0);
                     const restante = estimado - gastado;
                     const pctGastado = estimado > 0 ? (gastado / estimado) * 100 : 0;
                     return (
@@ -139,8 +130,11 @@ export default function PresupuestoView() {
                           <div className="flex items-center gap-3 text-xs">
                             <span className="text-gray-500">Estimado:</span>
                             <input type="number" step="0.01" min="0"
-                              value={estimado || ''}
-                              onChange={e => actualizarMonto(cat.id, Number(e.target.value))}
+                              defaultValue={estimado || ''}
+                              onBlur={e => {
+                                const val = Number(e.target.value);
+                                if (val !== estimado) actualizarMonto(cat.id, val);
+                              }}
                               className="w-28 text-right border border-gray-300 rounded px-2 py-0.5 text-sm font-mono" />
                           </div>
                         </div>
